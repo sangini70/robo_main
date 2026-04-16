@@ -1,0 +1,42 @@
+[
+  {
+    "slug": "exchange-rate-basics",
+    "title": "환율의 기초: 환율이란 무엇인가?",
+    "track": "exchange-rate",
+    "step": 1,
+    "thumbnail": "https://picsum.photos/seed/exchange/800/450",
+    "publishDate": "2026-04-10",
+    "status": "published",
+    "description": "환율의 정의와 기초적인 개념을 알아봅니다."
+  },
+  {
+    "slug": "exchange-rate-and-dollar",
+    "title": "환율과 달러의 관계: 왜 달러가 중요한가?",
+    "track": "exchange-rate",
+    "step": 2,
+    "thumbnail": "https://picsum.photos/seed/dollar/800/450",
+    "publishDate": "2026-04-11",
+    "status": "published",
+    "description": "기축통화로서의 달러와 환율의 상관관계를 심층 분석합니다."
+  },
+  {
+    "slug": "exchange-rate-vs-interest-rate",
+    "title": "환율 vs 금리: 돈의 흐름을 결정하는 두 축",
+    "track": "exchange-rate",
+    "step": 3,
+    "thumbnail": "https://picsum.photos/seed/interest/800/450",
+    "publishDate": "2026-04-12",
+    "status": "published",
+    "description": "금리가 오르면 환율은 어떻게 변할까요? 그 원리를 파헤칩니다."
+  },
+  {
+    "slug": "what-is-etf",
+    "title": "ETF 입문 가이드: 초보자를 위한 설명",
+    "track": "etf",
+    "step": 1,
+    "thumbnail": "https://picsum.photos/seed/etf/800/450",
+    "publishDate": "2026-04-12",
+    "status": "published",
+    "description": "ETF가 무엇인지, 왜 투자해야 하는지 기초부터 설명합니다."
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "exchange-rate": {
+    "step1": ["exchange-rate-basics"],
+    "step2": ["exchange-rate-and-dollar"],
+    "step3": ["exchange-rate-vs-interest-rate"],
+    "step4": [],
+    "step5": []
+  },
+  "etf": {
+    "step1": ["what-is-etf"],
+    "step2": [],
+    "step3": [],
+    "step4": [],
+    "step5": []
+  }
+}

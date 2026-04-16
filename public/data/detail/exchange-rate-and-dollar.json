@@ -1,0 +1,13 @@
+{
+  "slug": "exchange-rate-and-dollar",
+  "title": "환율과 달러의 관계: 왜 달러가 중요한가?",
+  "track": "exchange-rate",
+  "track_slug": "exchange-rate",
+  "step": 2,
+  "content": "달러는 전 세계 어디서나 통용되는 '기축통화'입니다. 따라서 환율을 이야기할 때 달러를 빼놓을 수 없습니다.\n\n### 달러 인덱스란?\n주요 6개국 통화 대비 달러의 가치를 지수로 나타낸 것입니다. 달러 인덱스가 오르면 달러가 강세라는 뜻이고, 보통 원/달러 환율도 함께 오르는 경향이 있습니다.\n\n### 안전자산으로서의 달러\n경제 위기가 오거나 시장이 불안정해지면 사람들은 안전한 달러를 찾습니다. 이때 달러 수요가 늘어나며 환율이 급등하게 됩니다.",
+  "thumbnail": "https://picsum.photos/seed/dollar/800/450",
+  "publishDate": "2026-04-11",
+  "status": "published",
+  "prev_slug": "exchange-rate-basics",
+  "next_slug": "exchange-rate-vs-interest-rate"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "exchange-rate-vs-interest-rate",
+  "title": "환율 vs 금리: 돈의 흐름을 결정하는 두 축",
+  "track": "exchange-rate",
+  "track_slug": "exchange-rate",
+  "step": 3,
+  "content": "금리와 환율은 아주 밀접한 관계가 있습니다. 돈은 금리가 낮은 곳에서 높은 곳으로 흐르기 때문입니다.\n\n### 금리가 오르면 환율은?\n미국이 금리를 올리면, 더 높은 이자를 받기 위해 전 세계의 돈이 미국으로 몰립니다. 달러 수요가 늘어나니 달러 가치가 오르고, 원/달러 환율도 상승하게 됩니다.\n\n### 한미 금리 역전 현상\n우리나라보다 미국의 금리가 더 높아지는 현상을 말합니다. 이 경우 국내 자본이 유출될 우려가 있어 한국은행도 금리 결정을 할 때 매우 신중해집니다.",
+  "thumbnail": "https://picsum.photos/seed/interest/800/450",
+  "publishDate": "2026-04-12",
+  "status": "published",
+  "prev_slug": "exchange-rate-and-dollar"
+}

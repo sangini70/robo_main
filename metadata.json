@@ -1,0 +1,6 @@
+{
+  "name": "Dallaport Robo-Advisor",
+  "description": "A static JSON-driven robo-advisor blog based on the Dallaport structure library.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

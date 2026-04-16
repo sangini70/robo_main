@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-bg-color: #f4f6f8;
+  --color-card-bg: #ffffff;
+  --color-primary: #1a365d;
+  --color-secondary: #2d3748;
+  --color-accent: #3182ce;
+  --color-border: #e2e8f0;
+  --color-text-main: #1a202c;
+  --color-text-muted: #718096;
+}
+
+@layer base {
+  body {
+    @apply antialiased text-text-main bg-bg-color font-sans;
+  }
+}
+
+.border-bottom {
+  border-bottom-width: 1px;
+}
+
+.border-top {
+  border-top-width: 1px;
+}
+
+.widget-title {
+  @apply text-[11px] uppercase tracking-[0.1em] text-text-muted mb-3 font-bold;
+}

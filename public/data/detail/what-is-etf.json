@@ -1,0 +1,11 @@
+{
+  "slug": "what-is-etf",
+  "title": "ETF 입문 가이드: 초보자를 위한 설명",
+  "track": "etf",
+  "track_slug": "etf",
+  "step": 1,
+  "content": "ETF(Exchange Traded Fund)는 상장지수펀드라고 불립니다. 주식처럼 거래소에서 사고팔 수 있는 펀드입니다.\n\n### 왜 ETF인가?\n1. **분산 투자**: 하나의 ETF를 사는 것만으로 여러 주식에 투자하는 효과가 있습니다.\n2. **낮은 수수료**: 일반 펀드보다 운용 보수가 저렴합니다.\n3. **투명성**: 어떤 주식을 담고 있는지 매일 공개됩니다.",
+  "thumbnail": "https://picsum.photos/seed/etf/800/450",
+  "publishDate": "2026-04-12",
+  "status": "published"
+}
