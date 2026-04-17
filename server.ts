@@ -217,27 +217,42 @@ Sitemap: https://${host}/sitemap.xml`;
     // Admin Auth (Firebase Token Based)
     app.post("/api/admin/login", loginLimiter, async (req, res) => {
       const { idToken } = req.body;
-      const adminEmails = ["luganopizza@gmail.com"];
+      
+      // 관리자 권한 리스트 (UID 기반이 가장 안전합니다)
+      const adminUIDs: string[] = [
+        // "uid_value_here", // luganopizza@gmail.com의 UID를 여기에 추가하세요
+      ];
+      
+      const adminEmails: string[] = [
+        "luganopizza@gmail.com"
+      ];
       
       try {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const uid = decodedToken.uid;
         const email = decodedToken.email?.trim().toLowerCase();
         const emailVerified = decodedToken.email_verified;
 
-        console.log(`[AUTH] Login attempt metadata: email=${email}, verified=${emailVerified}`);
+        console.log(`[AUTH] Login attempt metadata: uid=${uid}, email=${email}, verified=${emailVerified}`);
 
-        if (email && adminEmails.includes(email) && emailVerified) {
+        // 1. UID 기반 체크 (권장)
+        const isAuthorizedByUID = adminUIDs.includes(uid);
+        
+        // 2. 이메일 기반 체크 (백업)
+        const isAuthorizedByEmail = email && adminEmails.includes(email) && emailVerified;
+
+        if (isAuthorizedByUID || isAuthorizedByEmail) {
           res.cookie("admin_session", "authenticated", { 
             httpOnly: true, 
-            secure: true, // Always true for production HTTPS (Vercel)
+            secure: true, 
             sameSite: 'lax',
             maxAge: 3600000 * 24 // 24 hours
           });
-          console.log(`[AUTH] Admin login successful for: ${email}`);
+          console.log(`[AUTH] Admin login successful for UID: ${uid} (Email: ${email})`);
           return res.status(200).json({ success: true });
         } else {
-          console.warn(`[AUTH] Unauthorized login attempt by: ${email}`);
-          return res.status(403).json({ error: "Unauthorized email" });
+          console.warn(`[AUTH] Unauthorized login attempt by: ${email} (UID: ${uid})`);
+          return res.status(403).json({ error: "Access Denied: Unauthorized User" });
         }
       } catch (error) {
         console.error(`[AUTH] Token verification failed:`, error);

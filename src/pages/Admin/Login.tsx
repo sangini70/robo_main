@@ -17,7 +17,7 @@ export default function AdminLogin() {
       const user = await signInWithGoogle();
       const idToken = await user.getIdToken();
       
-      console.log(`[CLIENT AUTH] Authenticated email: ${user.email}`);
+      console.log(`[CLIENT AUTH] Authenticated email: ${user.email}, UID: ${user.uid}`);
       
       const success = await login(idToken);
       if (success) {
