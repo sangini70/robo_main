@@ -4,58 +4,77 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import cookieParser from "cookie-parser";
-import Database from "better-sqlite3";
+import admin from "firebase-admin";
 import crypto from "crypto";
 import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 
+// Initialize Firebase Admin
+import firebaseConfig from "./firebase-applet-config.json";
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: firebaseConfig.projectId,
+      // NOTE: In a real serverless env, you'd use service account keys.
+      // Here we assume the environment provides default credentials or we use a fallback path.
+      // For this applet environment, we'll try to use the project ID.
+    }),
+    databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`,
+  });
+}
+
+const db = admin.firestore();
+// Set named database if provided
+if (firebaseConfig.firestoreDatabaseId) {
+  // @ts-ignore - Some versions of firebase-admin might not have this directly exposed this way
+  if (db.settings) {
+    db.settings({ databaseId: firebaseConfig.firestoreDatabaseId });
+  }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = path.join(process.cwd(), 'database.sqlite');
-const db = new Database(dbPath);
+// --- Statistics Logic ---
 
-// Initialize DB schema
-db.exec(`
-  CREATE TABLE IF NOT EXISTS stats (
-    slug TEXT PRIMARY KEY,
-    views INTEGER DEFAULT 0,
-    impressions INTEGER DEFAULT 0,
-    clicks INTEGER DEFAULT 0,
-    updatedAt TEXT
-  );
+async function canTrack(req: express.Request, slug: string, type: string): Promise<boolean> {
+  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+  const ua = req.headers['user-agent'] || 'unknown';
   
-  CREATE TABLE IF NOT EXISTS admin_config (
-    key TEXT PRIMARY KEY,
-    value TEXT
-  );
+  // Bot filtering: very basic
+  if (ua.toLowerCase().includes('bot') || ua.toLowerCase().includes('crawler') || ua.toLowerCase().includes('spider')) {
+    return false;
+  }
 
-  CREATE TABLE IF NOT EXISTS track_logs (
-    hash TEXT,
-    slug TEXT,
-    type TEXT,
-    timestamp INTEGER,
-    PRIMARY KEY(hash, slug, type)
-  );
-
-  CREATE TABLE IF NOT EXISTS indexing_status (
-    slug TEXT PRIMARY KEY,
-    google_status TEXT DEFAULT '미요청',
-    naver_status TEXT DEFAULT '미요청',
-    updatedAt TEXT
-  );
-`);
-
-// Helper to cleanup old track logs (older than 24h)
-function cleanupLogs() {
-  const yesterday = Date.now() - 24 * 60 * 60 * 1000;
-  db.prepare("DELETE FROM track_logs WHERE timestamp < ?").run(yesterday);
+  const hash = crypto.createHash('sha256').update(`${ip}-${ua}-${slug}-${type}`).digest('hex');
+  const now = Date.now();
+  const trackRef = db.collection('track_logs').doc(hash);
+  
+  try {
+    const doc = await trackRef.get();
+    if (doc.exists) {
+      const data = doc.data();
+      if (data && now - data.timestamp < 24 * 60 * 60 * 1000) {
+        return false; // Already tracked in last 24h
+      }
+    }
+    await trackRef.set({ hash, slug, type, timestamp: now });
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
-setInterval(cleanupLogs, 60 * 60 * 1000); // Hourly
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Trust proxy for Vercel/Cloud Run (correct IP, HTTPS detection)
+  app.set('trust proxy', 1);
+
+  console.log(`[INIT] Environment: ${process.env.NODE_ENV}`);
+  console.log(`[INIT] ADMIN_PASSWORD configured: ${!!process.env.ADMIN_PASSWORD}`);
 
   app.use(express.json());
   app.use(cookieParser("robo-advisor-secret"));
@@ -82,33 +101,10 @@ async function startServer() {
     next();
   }
 
-  // --- Statistics Logic ---
-
-  function canTrack(req: express.Request, slug: string, type: string): boolean {
-    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-    const ua = req.headers['user-agent'] || 'unknown';
-    
-    // Bot filtering: very basic
-    if (ua.toLowerCase().includes('bot') || ua.toLowerCase().includes('crawler') || ua.toLowerCase().includes('spider')) {
-      return false;
-    }
-
-    const hash = crypto.createHash('sha256').update(`${ip}-${ua}`).digest('hex');
-    const now = Date.now();
-    
-    try {
-      db.prepare("INSERT INTO track_logs (hash, slug, type, timestamp) VALUES (?, ?, ?, ?)").run(hash, slug, type, now);
-      return true;
-    } catch (e) {
-      // Hash+slug+type already exists for last 24h (due to unique PK and cleanup)
-      return false;
-    }
-  }
-
   // --- SEO Assets ---
 
   app.get("/robots.txt", (req, res) => {
-    const host = req.headers.host || 'robo-advisor.app';
+    const host = 'robo-main.vercel.app';
     const content = `User-agent: *
 Allow: /
 Disallow: /admin
@@ -120,7 +116,7 @@ Sitemap: https://${host}/sitemap.xml`;
     try {
       const postsPath = path.join(process.cwd(), 'public', 'data', 'posts.json');
       const posts = JSON.parse(fs.readFileSync(postsPath, 'utf8'));
-      const host = req.headers.host || 'robo-advisor.app';
+      const host = 'robo-main.vercel.app';
       const now = new Date();
 
       const publishedPosts = posts.filter((p: any) => 
@@ -152,86 +148,97 @@ Sitemap: https://${host}/sitemap.xml`;
   // --- API Routes ---
   
   // Stats tracking
-  app.post("/api/track/view", trackerLimiter, validateOrigin, (req, res) => {
+  app.post("/api/track/view", trackerLimiter, validateOrigin, async (req, res) => {
     const { slug } = req.body;
     if (!slug) return res.status(400).json({ error: "slug required" });
     
-    if (canTrack(req, slug, 'view')) {
+    if (await canTrack(req, slug, 'view')) {
       const now = new Date().toISOString();
-      db.prepare(`
-        INSERT INTO stats (slug, views, updatedAt) 
-        VALUES (?, 1, ?) 
-        ON CONFLICT(slug) DO UPDATE SET views = views + 1, updatedAt = ?
-      `).run(slug, now, now);
+      const statRef = db.collection('stats').doc(slug);
+      await statRef.set({
+        slug,
+        views: admin.firestore.FieldValue.increment(1),
+        updatedAt: now
+      }, { merge: true });
     }
     
     res.json({ success: true });
   });
 
-  app.post("/api/track/click", trackerLimiter, validateOrigin, (req, res) => {
+  app.post("/api/track/click", trackerLimiter, validateOrigin, async (req, res) => {
     const { slug } = req.body;
     if (!slug) return res.status(400).json({ error: "slug required" });
     
-    if (canTrack(req, slug, 'click')) {
+    if (await canTrack(req, slug, 'click')) {
       const now = new Date().toISOString();
-      db.prepare(`
-        INSERT INTO stats (slug, clicks, updatedAt) 
-        VALUES (?, 1, ?) 
-        ON CONFLICT(slug) DO UPDATE SET clicks = clicks + 1, updatedAt = ?
-      `).run(slug, now, now);
+      const statRef = db.collection('stats').doc(slug);
+      await statRef.set({
+        slug,
+        clicks: admin.firestore.FieldValue.increment(1),
+        updatedAt: now
+      }, { merge: true });
     }
     
     res.json({ success: true });
   });
 
-  app.post("/api/track/impression", trackerLimiter, validateOrigin, (req, res) => {
+  app.post("/api/track/impression", trackerLimiter, validateOrigin, async (req, res) => {
     const { slug } = req.body;
     if (!slug) return res.status(400).json({ error: "slug required" });
     
-    if (canTrack(req, slug, 'impression')) {
+    if (await canTrack(req, slug, 'impression')) {
       const now = new Date().toISOString();
-      db.prepare(`
-        INSERT INTO stats (slug, impressions, updatedAt) 
-        VALUES (?, 1, ?) 
-        ON CONFLICT(slug) DO UPDATE SET impressions = impressions + 1, updatedAt = ?
-      `).run(slug, now, now);
+      const statRef = db.collection('stats').doc(slug);
+      await statRef.set({
+        slug,
+        impressions: admin.firestore.FieldValue.increment(1),
+        updatedAt: now
+      }, { merge: true });
     }
     
     res.json({ success: true });
   });
 
-  // Admin Auth
-  app.post("/api/admin/login", loginLimiter, async (req, res) => {
-    const { password } = req.body;
-    const adminPasswordEnv = process.env.ADMIN_PASSWORD || "admin123";
-    
-    const customPass = db.prepare("SELECT value FROM admin_config WHERE key = 'password'").get() as { value: string } | undefined;
-    const finalPasswordHash = customPass ? customPass.value : null;
+    // Admin Auth
+    app.post("/api/admin/login", loginLimiter, async (req, res) => {
+      const { password } = req.body;
+      const adminPasswordEnv = process.env.ADMIN_PASSWORD || "ksic1001##";
+      
+      const configDoc = await db.collection('admin_config').doc('password').get();
+      const finalPasswordHash = configDoc.exists ? configDoc.data()?.value : null;
 
-    let authenticated = false;
-    if (!finalPasswordHash) {
-      // First time or env fallback: Check plain text and hash it
+      let authenticated = false;
+      let shouldSyncDb = false;
+
+      // 1. Priority check: Environment variable
       if (password === adminPasswordEnv) {
         authenticated = true;
-        const hash = await bcrypt.hash(password, 10);
-        db.prepare("INSERT OR REPLACE INTO admin_config (key, value) VALUES ('password', ?)").run(hash);
+        shouldSyncDb = true;
+      } 
+      // 2. Secondary check: Database hash
+      else if (finalPasswordHash) {
+        authenticated = await bcrypt.compare(password, finalPasswordHash);
       }
-    } else {
-      authenticated = await bcrypt.compare(password, finalPasswordHash);
-    }
 
-    if (authenticated) {
-      res.cookie("admin_session", "authenticated", { 
-        httpOnly: true, 
-        secure: process.env.NODE_ENV === "production",
-        sameSite: 'strict',
-        maxAge: 3600000 * 24 // 24 hours
-      });
-      return res.json({ success: true });
-    }
-    
-    res.status(401).json({ error: "Invalid password" });
-  });
+      if (authenticated) {
+        if (shouldSyncDb) {
+          const hash = await bcrypt.hash(password, 10);
+          await db.collection('admin_config').doc('password').set({ key: 'password', value: hash });
+        }
+
+        res.cookie("admin_session", "authenticated", { 
+          httpOnly: true, 
+          secure: true, // Always true for production HTTPS (Vercel)
+          sameSite: 'lax', // Lax is better for OIDC/external redirects if needed, but safe here
+          maxAge: 3600000 * 24 // 24 hours
+        });
+        console.log(`[AUTH] Login successful for IP: ${req.ip}`);
+        return res.status(200).json({ success: true });
+      }
+      
+      console.warn(`[AUTH] Login failed (401) for IP: ${req.ip}`);
+      res.status(401).json({ error: "Invalid password" });
+    });
 
   app.post("/api/admin/logout", (req, res) => {
     res.clearCookie("admin_session");
@@ -251,36 +258,39 @@ Sitemap: https://${host}/sitemap.xml`;
     }
     
     const { currentPassword, newPassword } = req.body;
-    const customPass = db.prepare("SELECT value FROM admin_config WHERE key = 'password'").get() as { value: string } | undefined;
+    const configDoc = await db.collection('admin_config').doc('password').get();
+    const finalPasswordHash = configDoc.exists ? configDoc.data()?.value : null;
     
-    if (customPass) {
-      const match = await bcrypt.compare(currentPassword, customPass.value);
+    if (finalPasswordHash) {
+      const match = await bcrypt.compare(currentPassword, finalPasswordHash);
       if (!match) return res.status(401).json({ error: "Current password incorrect" });
     }
 
     const hash = await bcrypt.hash(newPassword, 10);
-    db.prepare("INSERT OR REPLACE INTO admin_config (key, value) VALUES ('password', ?)").run(hash);
+    await db.collection('admin_config').doc('password').set({ key: 'password', value: hash });
     res.json({ success: true });
   });
 
   // Admin: Indexing Status
-  app.get("/api/admin/indexing", (req, res) => {
+  app.get("/api/admin/indexing", async (req, res) => {
     if (req.cookies.admin_session !== "authenticated") return res.status(403).json({ error: "Unauthorized" });
-    const statuses = db.prepare("SELECT * FROM indexing_status").all();
+    const snapshot = await db.collection('indexing_status').get();
+    const statuses = snapshot.docs.map(doc => doc.data());
     res.json(statuses);
   });
 
-  app.post("/api/admin/indexing", (req, res) => {
+  app.post("/api/admin/indexing", async (req, res) => {
     if (req.cookies.admin_session !== "authenticated") return res.status(403).json({ error: "Unauthorized" });
     const { slug, platform, status } = req.body; // platform: google | naver
     const field = platform === 'google' ? 'google_status' : 'naver_status';
     const now = new Date().toISOString();
     
-    db.prepare(`
-      INSERT INTO indexing_status (slug, ${field}, updatedAt) 
-      VALUES (?, ?, ?) 
-      ON CONFLICT(slug) DO UPDATE SET ${field} = ?, updatedAt = ?
-    `).run(slug, status, now, status, now);
+    const indexingRef = db.collection('indexing_status').doc(slug);
+    await indexingRef.set({
+      slug,
+      [field]: status,
+      updatedAt: now
+    }, { merge: true });
     
     res.json({ success: true });
   });
@@ -313,24 +323,30 @@ Sitemap: https://${host}/sitemap.xml`;
   });
 
   // Dashboard Stats
-  app.get("/api/admin/stats", (req, res) => {
+  app.get("/api/admin/stats", async (req, res) => {
     if (req.cookies.admin_session !== "authenticated") {
       return res.status(403).json({ error: "Unauthorized" });
     }
     
-    const stats = db.prepare("SELECT * FROM stats").all();
-    const indexing = db.prepare("SELECT * FROM indexing_status").all();
+    const statsSnapshot = await db.collection('stats').get();
+    const stats = statsSnapshot.docs.map(doc => doc.data());
+
+    const indexingSnapshot = await db.collection('indexing_status').get();
+    const indexing = indexingSnapshot.docs.map(doc => doc.data());
+
     res.json({ stats, indexing });
   });
 
-  // Manual Backup Script Interface
-  app.post("/api/admin/backup", (req, res) => {
+  // Backup - Cloud implementation (Firebase handles durability, but we can export)
+  app.post("/api/admin/backup", async (req, res) => {
     if (req.cookies.admin_session !== "authenticated") return res.status(403).json({ error: "Unauthorized" });
-    const backupDir = path.join(process.cwd(), 'backups');
-    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir);
-    const fileName = `backup-${new Date().toISOString().replace(/:/g, '-')}.sqlite`;
-    fs.copyFileSync(dbPath, path.join(backupDir, fileName));
-    res.json({ success: true, fileName });
+    // For Firestore, manual backup is often a project-level setting.
+    // We can provide a JSON dump here if needed.
+    const allStats = (await db.collection('stats').get()).docs.map(d => d.data());
+    const backupPath = path.join(process.cwd(), 'backups', `stats-${Date.now()}.json`);
+    if (!fs.existsSync(path.join(process.cwd(), 'backups'))) fs.mkdirSync(path.join(process.cwd(), 'backups'));
+    fs.writeFileSync(backupPath, JSON.stringify(allStats));
+    res.json({ success: true });
   });
 
   // Vite middleware setup

@@ -1,0 +1,53 @@
+{
+  "entities": {
+    "Stat": {
+      "title": "Statistics",
+      "description": "Visitor statistics for posts",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string" },
+        "views": { "type": "integer" },
+        "clicks": { "type": "integer" },
+        "impressions": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["slug", "updatedAt"]
+    },
+    "AdminConfig": {
+      "title": "Admin Configuration",
+      "description": "Global settings for the admin panel",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "string" }
+      },
+      "required": ["key", "value"]
+    },
+    "IndexingStatus": {
+      "title": "Indexing Status",
+      "description": "Search engine indexing status for posts",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string" },
+        "google_status": { "type": "string" },
+        "naver_status": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["slug", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/stats/{slug}": {
+      "schema": "Stat",
+      "description": "Post visit and interaction stats"
+    },
+    "/admin_config/{key}": {
+      "schema": "AdminConfig",
+      "description": "Admin settings and hashed secrets"
+    },
+    "/indexing_status/{slug}": {
+      "schema": "IndexingStatus",
+      "description": "SEO indexing status tracking"
+    }
+  }
+}
