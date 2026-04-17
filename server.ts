@@ -218,9 +218,8 @@ Sitemap: https://${host}/sitemap.xml`;
     app.post("/api/admin/login", loginLimiter, async (req, res) => {
       const { idToken } = req.body;
       
-      // 관리자 권한 리스트 (UID 기반이 가장 안전합니다)
       const adminUIDs: string[] = [
-        // "uid_value_here", // luganopizza@gmail.com의 UID를 여기에 추가하세요
+        "O8T7pyXh5Mfd5wx7fqJdkfqTzw1"
       ];
       
       const adminEmails: string[] = [
@@ -233,26 +232,25 @@ Sitemap: https://${host}/sitemap.xml`;
         const email = decodedToken.email?.trim().toLowerCase();
         const emailVerified = decodedToken.email_verified;
 
-        console.log(`[AUTH] Login attempt metadata: uid=${uid}, email=${email}, verified=${emailVerified}`);
+        // 디버깅 로그
+        console.log(`[AUTH] Login attempt: uid=${uid}, email=${email}, verified=${emailVerified}`);
 
-        // 1. UID 기반 체크 (권장)
-        const isAuthorizedByUID = adminUIDs.includes(uid);
-        
-        // 2. 이메일 기반 체크 (백업)
-        const isAuthorizedByEmail = email && adminEmails.includes(email) && emailVerified;
+        const isAllowedUid = adminUIDs.includes(uid);
+        const isAllowedEmail = email ? adminEmails.includes(email) : false;
 
-        if (isAuthorizedByUID || isAuthorizedByEmail) {
+        // UID 우선, 이메일 fallback
+        if ((isAllowedUid || isAllowedEmail) && emailVerified) {
           res.cookie("admin_session", "authenticated", { 
             httpOnly: true, 
             secure: true, 
             sameSite: 'lax',
             maxAge: 3600000 * 24 // 24 hours
           });
-          console.log(`[AUTH] Admin login successful for UID: ${uid} (Email: ${email})`);
+          console.log(`[AUTH] Admin access granted: uid=${uid}`);
           return res.status(200).json({ success: true });
         } else {
-          console.warn(`[AUTH] Unauthorized login attempt by: ${email} (UID: ${uid})`);
-          return res.status(403).json({ error: "Access Denied: Unauthorized User" });
+          console.warn(`[AUTH] Unauthorized access attempt: uid=${uid}, email=${email}`);
+          return res.status(403).json({ error: "UNAUTHORIZED" });
         }
       } catch (error) {
         console.error(`[AUTH] Token verification failed:`, error);
