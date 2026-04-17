@@ -75,7 +75,7 @@ export async function saveAdminPost(post: any): Promise<boolean> {
 }
 
 export async function deleteAdminPost(slug: string): Promise<boolean> {
-  const res = await fetch(`/api/admin/posts/${slug}`, {
+  const res = await fetch(`/api/admin/posts?slug=${slug}`, {
     method: 'DELETE'
   });
   return res.ok;

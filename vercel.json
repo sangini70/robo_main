@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/data/detail/:slug",
+      "destination": "/api/data/detail/:slug"
+    },
+    {
+      "source": "/data/:file",
+      "destination": "/api/data/:file"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }
