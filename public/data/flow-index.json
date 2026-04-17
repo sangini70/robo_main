@@ -1,16 +1,23 @@
 {
   "exchange-rate": {
-    "step1": ["exchange-rate-basics"],
-    "step2": ["exchange-rate-and-dollar"],
-    "step3": ["exchange-rate-vs-interest-rate"],
-    "step4": [],
-    "step5": []
+    "1": ["exchange-rate-basics"],
+    "2": ["exchange-rate-and-dollar"],
+    "3": ["exchange-rate-vs-interest-rate"],
+    "4": [],
+    "5": []
+  },
+  "interest-rate": {
+    "1": ["interest-rate-basics"],
+    "2": [],
+    "3": [],
+    "4": [],
+    "5": []
   },
   "etf": {
-    "step1": ["what-is-etf"],
-    "step2": [],
-    "step3": [],
-    "step4": [],
-    "step5": []
+    "1": ["what-is-etf"],
+    "2": [],
+    "3": [],
+    "4": [],
+    "5": []
   }
 }

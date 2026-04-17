@@ -1,11 +1,16 @@
 {
   "slug": "what-is-etf",
   "title": "ETF 입문 가이드: 초보자를 위한 설명",
-  "track": "etf",
-  "track_slug": "etf",
-  "step": 1,
-  "content": "ETF(Exchange Traded Fund)는 상장지수펀드라고 불립니다. 주식처럼 거래소에서 사고팔 수 있는 펀드입니다.\n\n### 왜 ETF인가?\n1. **분산 투자**: 하나의 ETF를 사는 것만으로 여러 주식에 투자하는 효과가 있습니다.\n2. **낮은 수수료**: 일반 펀드보다 운용 보수가 저렴합니다.\n3. **투명성**: 어떤 주식을 담고 있는지 매일 공개됩니다.",
+  "hub": "etf",
+  "flowStep": 1,
+  "content": "ETF(Exchange Traded Fund)는 주식처럼 거래소에서 사고팔 수 있는 펀드입니다. 여러 주식을 하나로 묶어놓은 바구니라고 생각하면 쉽습니다.\\n\\n### 왜 ETF인가?\\n1. **분산 투자**: 한 종목이 아닌 여러 종목에 동시에 투자하는 효과가 있습니다.\\n2. **저렴한 비용**: 일반 펀드보다 운용 보수가 낮습니다.\\n3. **투명성**: 실시간으로 어떤 종목을 담고 있는지 확인할 수 있습니다.\\n\\n### 대표적인 ETF\\n- S&P 500 지수를 따르는 ETF\\n- 나스닥 지수를 따르는 ETF\\n- 금, 원유 등 원자재 ETF",
   "thumbnail": "https://picsum.photos/seed/etf/800/450",
-  "publishDate": "2026-04-12",
-  "status": "published"
+  "publishAt": "2026-04-12T10:00:00+09:00",
+  "status": "published",
+  "summary": "ETF가 무엇인지, 왜 투자해야 하는지 기초부터 설명합니다.",
+  "googleIndexStatus": "미요청",
+  "naverIndexStatus": "미요청",
+  "related_slugs": ["exchange-rate-basics"],
+  "seoTitle": "ETF 입문 | 주식처럼 거래하는 펀드 이해하기",
+  "seoDescription": "ETF의 정의, 장점, 종류 등 초보 투자자가 꼭 알아야 할 기초 지식을 전달합니다."
 }

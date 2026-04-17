@@ -1,0 +1,17 @@
+{
+  "slug": "interest-rate-basics",
+  "title": "금리의 기초: 돈의 가치와 이자율",
+  "hub": "interest-rate",
+  "flowStep": 1,
+  "content": "금리는 '돈의 가격'입니다. 우리가 은행에 돈을 맡기면 이자를 받고, 돈을 빌리면 이자를 내는 것과 같은 이치입니다.\\n\\n### 금리가 오르면?\\n사람들은 돈을 쓰기보다는 저축하려고 합니다. 기업은 대출 비용이 늘어나 투자를 줄이게 됩니다. 결과적으로 시중의 돈이 줄어들어 물가가 안정되는 효과가 있습니다.\\n\\n### 기준금리란?\\n중앙은행(한국은행 등)이 결정하는 금리입니다. 시장 금리의 기준점이 되며, 경제 상황에 따라 조절됩니다.",
+  "thumbnail": "https://picsum.photos/seed/bank/800/450",
+  "publishAt": "2026-04-13T09:00:00+09:00",
+  "status": "published",
+  "summary": "금리가 무엇이며 경제 전반에 어떤 영향을 주는지 알아봅니다.",
+  "googleIndexStatus": "미요청",
+  "naverIndexStatus": "미요청",
+  "next_slug": null,
+  "related_slugs": ["exchange-rate-vs-interest-rate"],
+  "seoTitle": "금리 기초 이해하기 | 돈의 가치와 중앙은행",
+  "seoDescription": "금리의 정의와 기준금리의 역할 등 초보자가 알아야 할 금리 상식을 전달합니다."
+}

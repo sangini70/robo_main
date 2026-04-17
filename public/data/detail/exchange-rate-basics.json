@@ -1,13 +1,17 @@
 {
   "slug": "exchange-rate-basics",
   "title": "환율의 기초: 환율이란 무엇인가?",
-  "track": "exchange-rate",
-  "track_slug": "exchange-rate",
-  "step": 1,
-  "content": "환율은 한 나라의 화폐와 다른 나라 화폐의 교환 비율을 말합니다. 예를 들어 1달러에 1,300원이라면, 1달러를 얻기 위해 우리 돈 1,300원이 필요하다는 뜻입니다.\n\n### 환율이 오르면?\n우리나라 돈의 가치가 떨어졌다는 뜻입니다 (원화 약세). 수출 기업에게는 유리할 수 있지만, 수입 물가는 올라갑니다.\n\n### 환율이 내리면?\n우리나라 돈의 가치가 올라갔다는 뜻입니다 (원화 강세). 해외 직구나 여행을 갈 때 유리해집니다.",
+  "hub": "exchange-rate",
+  "flowStep": 1,
+  "content": "환율은 한 나라의 화폐와 다른 나라 화폐의 교환 비율을 말합니다. 예를 들어 1달러에 1,300원이라면, 1달러를 얻기 위해 우리 돈 1,300원이 필요하다는 뜻입니다.\\n\\n### 환율이 오르면?\\n우리나라 돈의 가치가 떨어졌다는 뜻입니다 (원화 약세). 수출 기업에게는 유리할 수 있지만, 수입 물가는 올라갑니다.\\n\\n### 환율이 내리면?\\n우리나라 돈의 가치가 올라갔다는 뜻입니다 (원화 강세). 해외 직구나 여행을 갈 때 유리해집니다.",
   "thumbnail": "https://picsum.photos/seed/exchange/800/450",
-  "publishDate": "2026-04-10",
+  "publishAt": "2026-04-10T09:00:00+09:00",
   "status": "published",
+  "summary": "환율의 정의와 기초적인 개념을 알아봅니다.",
+  "googleIndexStatus": "색인확인",
+  "naverIndexStatus": "미요청",
   "next_slug": "exchange-rate-and-dollar",
-  "related_slugs": ["exchange-rate-vs-interest-rate", "what-is-etf"]
+  "related_slugs": ["exchange-rate-vs-interest-rate", "what-is-etf"],
+  "seoTitle": "환율 기초 가이드 | 환율이란 무엇인가?",
+  "seoDescription": "환율의 정의와 기초적인 개념을 초보자 눈높이에서 알아봅니다."
 }

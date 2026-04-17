@@ -1,13 +1,18 @@
 {
   "slug": "exchange-rate-and-dollar",
   "title": "환율과 달러의 관계: 왜 달러가 중요한가?",
-  "track": "exchange-rate",
-  "track_slug": "exchange-rate",
-  "step": 2,
-  "content": "달러는 전 세계 어디서나 통용되는 '기축통화'입니다. 따라서 환율을 이야기할 때 달러를 빼놓을 수 없습니다.\n\n### 달러 인덱스란?\n주요 6개국 통화 대비 달러의 가치를 지수로 나타낸 것입니다. 달러 인덱스가 오르면 달러가 강세라는 뜻이고, 보통 원/달러 환율도 함께 오르는 경향이 있습니다.\n\n### 안전자산으로서의 달러\n경제 위기가 오거나 시장이 불안정해지면 사람들은 안전한 달러를 찾습니다. 이때 달러 수요가 늘어나며 환율이 급등하게 됩니다.",
+  "hub": "exchange-rate",
+  "flowStep": 2,
+  "content": "달러는 전 세계 어디서나 통용되는 '기축통화'입니다. 그래서 환율을 이야기할 때 보통 '달러 환율'을 가장 먼저 떠올리게 됩니다.\\n\\n### 왜 달러인가?\\n미국은 세계 최대의 경제 대국이며, 국제 무역의 대부분이 달러로 결제됩니다. 위기 상황이 오면 사람들은 가장 안전하다고 믿는 달러를 사려고 합니다 (안전자산 선호).\\n\\n### 달러 인덱스란?\\n주요 6개국 통화 대비 달러의 가치를 지수로 만든 것입니다. 달러 인덱스가 높으면 달러가 강세라는 뜻입니다.",
   "thumbnail": "https://picsum.photos/seed/dollar/800/450",
-  "publishDate": "2026-04-11",
+  "publishAt": "2026-04-11T09:00:00+09:00",
   "status": "published",
+  "summary": "기축통화로서의 달러와 환율의 상관관계를 심층 분석합니다.",
+  "googleIndexStatus": "요청완료",
+  "naverIndexStatus": "미요청",
   "prev_slug": "exchange-rate-basics",
-  "next_slug": "exchange-rate-vs-interest-rate"
+  "next_slug": "exchange-rate-vs-interest-rate",
+  "related_slugs": ["exchange-rate-basics"],
+  "seoTitle": "환율과 달러의 관계 | 기축통화 이해하기",
+  "seoDescription": "왜 환율에서 달러가 중요한지, 기축통화의 의미와 달러 인덱스에 대해 알아봅니다."
 }
