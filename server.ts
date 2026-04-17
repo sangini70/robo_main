@@ -10,26 +10,42 @@ import rateLimit from "express-rate-limit";
 import bcrypt from "bcryptjs";
 
 // Initialize Firebase Admin
-import firebaseConfig from "./firebase-applet-config.json";
+const projectId = process.env.FIREBASE_PROJECT_ID || "robo-advisor-prod";
+const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: firebaseConfig.projectId,
-      // NOTE: In a real serverless env, you'd use service account keys.
-      // Here we assume the environment provides default credentials or we use a fallback path.
-      // For this applet environment, we'll try to use the project ID.
-    }),
-    databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`,
-  });
+  if (clientEmail && privateKey) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+      databaseURL: `https://${projectId}.firebaseio.com`,
+    });
+  } else {
+    // Fallback for local development if env vars are missing
+    import("./firebase-applet-config.json").then((config) => {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: config.default.projectId,
+        }),
+      });
+    }).catch(() => {
+      console.error("Firebase Admin initialization failed: Missing credentials");
+    });
+  }
 }
 
 const db = admin.firestore();
+const FIRESTORE_DB_ID = process.env.VITE_FIREBASE_FIRESTORE_DB_ID;
+
 // Set named database if provided
-if (firebaseConfig.firestoreDatabaseId) {
-  // @ts-ignore - Some versions of firebase-admin might not have this directly exposed this way
+if (FIRESTORE_DB_ID) {
+  // @ts-ignore
   if (db.settings) {
-    db.settings({ databaseId: firebaseConfig.firestoreDatabaseId });
+    db.settings({ databaseId: FIRESTORE_DB_ID });
   }
 }
 
@@ -74,7 +90,6 @@ async function startServer() {
   app.set('trust proxy', 1);
 
   console.log(`[INIT] Environment: ${process.env.NODE_ENV}`);
-  console.log(`[INIT] ADMIN_PASSWORD configured: ${!!process.env.ADMIN_PASSWORD}`);
 
   app.use(express.json());
   app.use(cookieParser("robo-advisor-secret"));
@@ -199,45 +214,33 @@ Sitemap: https://${host}/sitemap.xml`;
     res.json({ success: true });
   });
 
-    // Admin Auth
+    // Admin Auth (Firebase Token Based)
     app.post("/api/admin/login", loginLimiter, async (req, res) => {
-      const { password } = req.body;
-      const adminPasswordEnv = process.env.ADMIN_PASSWORD || "ksic1001##";
+      const { idToken } = req.body;
+      const adminEmail = "luganopizza@gmail.com";
       
-      const configDoc = await db.collection('admin_config').doc('password').get();
-      const finalPasswordHash = configDoc.exists ? configDoc.data()?.value : null;
+      try {
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const email = decodedToken.email;
+        const emailVerified = decodedToken.email_verified;
 
-      let authenticated = false;
-      let shouldSyncDb = false;
-
-      // 1. Priority check: Environment variable
-      if (password === adminPasswordEnv) {
-        authenticated = true;
-        shouldSyncDb = true;
-      } 
-      // 2. Secondary check: Database hash
-      else if (finalPasswordHash) {
-        authenticated = await bcrypt.compare(password, finalPasswordHash);
-      }
-
-      if (authenticated) {
-        if (shouldSyncDb) {
-          const hash = await bcrypt.hash(password, 10);
-          await db.collection('admin_config').doc('password').set({ key: 'password', value: hash });
+        if (email === adminEmail && emailVerified) {
+          res.cookie("admin_session", "authenticated", { 
+            httpOnly: true, 
+            secure: true, // Always true for production HTTPS (Vercel)
+            sameSite: 'lax',
+            maxAge: 3600000 * 24 // 24 hours
+          });
+          console.log(`[AUTH] Admin login successful for: ${email}`);
+          return res.status(200).json({ success: true });
+        } else {
+          console.warn(`[AUTH] Unauthorized login attempt by: ${email}`);
+          return res.status(403).json({ error: "Unauthorized email" });
         }
-
-        res.cookie("admin_session", "authenticated", { 
-          httpOnly: true, 
-          secure: true, // Always true for production HTTPS (Vercel)
-          sameSite: 'lax', // Lax is better for OIDC/external redirects if needed, but safe here
-          maxAge: 3600000 * 24 // 24 hours
-        });
-        console.log(`[AUTH] Login successful for IP: ${req.ip}`);
-        return res.status(200).json({ success: true });
+      } catch (error) {
+        console.error(`[AUTH] Token verification failed:`, error);
+        res.status(401).json({ error: "Invalid token" });
       }
-      
-      console.warn(`[AUTH] Login failed (401) for IP: ${req.ip}`);
-      res.status(401).json({ error: "Invalid password" });
     });
 
   app.post("/api/admin/logout", (req, res) => {
@@ -253,22 +256,8 @@ Sitemap: https://${host}/sitemap.xml`;
   });
 
   app.post("/api/admin/settings/password", async (req, res) => {
-    if (req.cookies.admin_session !== "authenticated") {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
-    
-    const { currentPassword, newPassword } = req.body;
-    const configDoc = await db.collection('admin_config').doc('password').get();
-    const finalPasswordHash = configDoc.exists ? configDoc.data()?.value : null;
-    
-    if (finalPasswordHash) {
-      const match = await bcrypt.compare(currentPassword, finalPasswordHash);
-      if (!match) return res.status(401).json({ error: "Current password incorrect" });
-    }
-
-    const hash = await bcrypt.hash(newPassword, 10);
-    await db.collection('admin_config').doc('password').set({ key: 'password', value: hash });
-    res.json({ success: true });
+    // This functionality is deprecated in favor of Firebase Auth
+    return res.status(501).json({ error: "Legacy password settings are disabled. Use Firebase Auth." });
   });
 
   // Admin: Indexing Status
@@ -295,30 +284,119 @@ Sitemap: https://${host}/sitemap.xml`;
     res.json({ success: true });
   });
 
-  // Admin: Signals
-  app.get("/api/admin/signals", (req, res) => {
+  // Admin: Posts CRUD (Firestore based)
+  app.get("/api/admin/posts", async (req, res) => {
     if (req.cookies.admin_session !== "authenticated") return res.status(403).json({ error: "Unauthorized" });
     try {
-      const signalsPath = path.join(process.cwd(), 'public', 'data', 'signals.json');
-      if (!fs.existsSync(signalsPath)) {
-        return res.json([]);
-      }
-      const signals = JSON.parse(fs.readFileSync(signalsPath, 'utf8'));
-      res.json(signals);
+      const snapshot = await db.collection('posts').get();
+      const posts = snapshot.docs.map(doc => doc.data());
+      res.json(posts);
     } catch (e) {
-      res.status(500).json({ error: "Failed to read signals" });
+      res.status(500).json({ error: "Failed to fetch posts from Firestore" });
     }
   });
 
-  app.post("/api/admin/signals", (req, res) => {
+  app.post("/api/admin/posts", async (req, res) => {
     if (req.cookies.admin_session !== "authenticated") return res.status(403).json({ error: "Unauthorized" });
     try {
-      const signalsPath = path.join(process.cwd(), 'public', 'data', 'signals.json');
-      const signals = req.body;
-      fs.writeFileSync(signalsPath, JSON.stringify(signals, null, 2));
+      const post = req.body;
+      if (!post.slug) return res.status(400).json({ error: "Slug is required" });
+      
+      await db.collection('posts').doc(post.slug).set({
+        ...post,
+        updatedAt: new Date().toISOString()
+      });
       res.json({ success: true });
     } catch (e) {
-      res.status(500).json({ error: "Failed to save signals" });
+      res.status(500).json({ error: "Failed to save post to Firestore" });
+    }
+  });
+
+  app.delete("/api/admin/posts/:slug", async (req, res) => {
+    if (req.cookies.admin_session !== "authenticated") return res.status(403).json({ error: "Unauthorized" });
+    try {
+      const { slug } = req.params;
+      await db.collection('posts').doc(slug).delete();
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: "Failed to delete post from Firestore" });
+    }
+  });
+
+  // Admin: Publish (Export Firestore to JSON for public speed)
+  app.post("/api/admin/publish", async (req, res) => {
+    if (req.cookies.admin_session !== "authenticated") return res.status(403).json({ error: "Unauthorized" });
+    try {
+      // 1. Sync Posts
+      const postsSnapshot = await db.collection('posts').get();
+      const posts = postsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        // Remove sensitive or unnecessary fields for public JSON
+        const { ...summary } = data;
+        return summary;
+      });
+      fs.writeFileSync(path.join(process.cwd(), 'public', 'data', 'posts.json'), JSON.stringify(posts, null, 2));
+
+      // 2. Sync Signals
+      const signalsSnapshot = await db.collection('signals').get();
+      const signals = signalsSnapshot.docs.map(doc => doc.data());
+      fs.writeFileSync(path.join(process.cwd(), 'public', 'data', 'signals.json'), JSON.stringify(signals, null, 2));
+
+      // 3. Sync Flow Index
+      const flowIndex: any = {};
+      posts.forEach((p: any) => {
+        if (!flowIndex[p.hub]) flowIndex[p.hub] = {};
+        if (!flowIndex[p.hub][p.flowStep]) flowIndex[p.hub][p.flowStep] = [];
+        flowIndex[p.hub][p.flowStep].push(p.slug);
+      });
+      fs.writeFileSync(path.join(process.cwd(), 'public', 'data', 'flow-index.json'), JSON.stringify(flowIndex, null, 2));
+
+      // 4. Create Detail JSONs (for visits)
+      const detailDir = path.join(process.cwd(), 'public', 'data', 'detail');
+      if (!fs.existsSync(detailDir)) fs.mkdirSync(detailDir, { recursive: true });
+      posts.forEach((p: any) => {
+        fs.writeFileSync(path.join(detailDir, `${p.slug}.json`), JSON.stringify(p, null, 2));
+      });
+
+      res.json({ success: true, message: "Production sync completed. Content published to static storage." });
+    } catch (e) {
+      console.error("Publish failed:", e);
+      res.status(500).json({ error: "Failed to publish static content" });
+    }
+  });
+
+  // Admin: Signals (Update to Firestore)
+  app.get("/api/admin/signals", async (req, res) => {
+    if (req.cookies.admin_session !== "authenticated") return res.status(403).json({ error: "Unauthorized" });
+    try {
+      const snapshot = await db.collection('signals').get();
+      const signals = snapshot.docs.map(doc => doc.data());
+      res.json(signals);
+    } catch (e) {
+      res.status(500).json({ error: "Failed to read signals from Firestore" });
+    }
+  });
+
+  app.post("/api/admin/signals", async (req, res) => {
+    if (req.cookies.admin_session !== "authenticated") return res.status(403).json({ error: "Unauthorized" });
+    try {
+      const signals = req.body; // Array of signals
+      // Transactional or batch update
+      const batch = db.batch();
+      // First clear old? Or just update. 
+      // Usually better to use a dedicated collection.
+      const signalsRef = db.collection('signals');
+      
+      // Update/Set all
+      signals.forEach((s: any) => {
+        const ref = signalsRef.doc(s.id.toString());
+        batch.set(ref, s);
+      });
+      
+      await batch.commit();
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: "Failed to save signals to Firestore" });
     }
   });
 

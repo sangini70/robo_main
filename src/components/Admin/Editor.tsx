@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PostDetail, PostStatus, IndexStatus } from '../../types';
 import { Save, Eye, Trash2, ArrowLeft, RefreshCw, Copy, Download } from 'lucide-react';
+import { saveAdminPost, fetchAdminPosts } from '../../services/adminService';
 
 interface Props {
   isNew?: boolean;
@@ -34,32 +35,48 @@ export default function AdminEditor({ isNew }: Props) {
 
   useEffect(() => {
     if (!isNew && slug) {
-      fetch(`/data/detail/${slug}.json`)
-        .then(res => res.json())
-        .then(data => {
-          setPost(data);
+      fetchAdminPosts().then(posts => {
+        const found = posts.find((p: any) => p.slug === slug);
+        if (found) {
+          setPost(found);
           setLoading(false);
-        })
-        .catch(err => {
-          console.error('Failed to fetch post detail:', err);
-          setLoading(false);
-        });
+        } else {
+          // Fallback to static JSON if not in Firestore yet
+          fetch(`/data/detail/${slug}.json`)
+            .then(res => res.json())
+            .then(data => {
+              setPost(data);
+              setLoading(false);
+            })
+            .catch(err => {
+              console.error('Failed to fetch post detail:', err);
+              setLoading(false);
+            });
+        }
+      });
     }
   }, [isNew, slug]);
 
-  const handleSave = () => {
-    // Logic to generate the JSONs as per instructions
-    const detailJson = JSON.stringify(post, null, 2);
-    
-    // In a real app with a backend, we'd POST here.
-    // For this build, we show the output for the user to "Git commit"
-    setJsonOutput({
-      posts: '// Update public/data/posts.json with this item',
-      detail: detailJson,
-      flow: '// Update public/data/flow-index.json'
-    });
-    
-    alert('JSON generated! In this environment, you should ask the AI Agent to apply these changes or manual update your files.');
+  const handleSave = async () => {
+    if (!post.slug || !post.title) {
+      alert('Title and Slug are required');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const success = await saveAdminPost(post);
+      if (success) {
+        alert('Saved to Firestore! Use the "Publish" button on the list page to update the public site.');
+        navigate('/admin/posts');
+      } else {
+        alert('Failed to save');
+      }
+    } catch (e) {
+      alert('Error saving post');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) return <div className="p-12 text-center text-text-muted">Loading editor...</div>;
@@ -77,8 +94,12 @@ export default function AdminEditor({ isNew }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleSave} className="bg-primary text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-opacity-90 transition-all shadow-md">
-            <Save size={18} /> Save & Generate JSON
+          <button 
+            onClick={handleSave} 
+            disabled={loading}
+            className="bg-primary text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-opacity-90 transition-all shadow-md disabled:opacity-50"
+          >
+            <Save size={18} /> {loading ? 'Saving...' : 'Save to Firestore'}
           </button>
         </div>
       </div>

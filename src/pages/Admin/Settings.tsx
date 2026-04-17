@@ -1,104 +1,46 @@
-import React, { useState } from 'react';
-import { Shield, AlertCircle } from 'lucide-react';
-import { updatePassword as updatePassService } from '../../services/adminService';
+import React from 'react';
+import { Shield, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function AdminSettings() {
-  const [passwords, setPasswords] = useState({
-    current: '',
-    new: '',
-    confirm: ''
-  });
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [loading, setLoading] = useState(false);
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwords.new !== passwords.confirm) {
-      setMessage({ type: 'error', text: 'New passwords do not match' });
-      return;
-    }
-    if (passwords.new.length < 6) {
-      setMessage({ type: 'error', text: 'Password must be at least 6 characters' });
-      return;
-    }
-
-    setLoading(true);
-    const success = await updatePassService(passwords.current, passwords.new);
-    if (success) {
-      setMessage({ type: 'success', text: 'Password updated successfully' });
-      setPasswords({ current: '', new: '', confirm: '' });
-    } else {
-      setMessage({ type: 'error', text: 'Failed to update password. Current password may be incorrect.' });
-    }
-    setLoading(false);
-  };
-
   return (
     <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold text-text-main">Settings</h1>
+      <header>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">System Settings</h1>
+        <p className="text-gray-500 font-medium">Core configuration and security management.</p>
+      </header>
 
-      <div className="bg-white border border-border rounded-lg shadow-sm">
-        <div className="p-4 border-b border-border font-bold text-text-main text-sm flex items-center gap-2">
-          <Shield size={16} className="text-accent" /> System Authentication
+      <div className="bg-white border border-gray-100 rounded-[32px] overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-gray-50 font-black text-gray-900 text-sm flex items-center gap-2 uppercase tracking-widest">
+          <Shield size={18} className="text-primary" /> Authentication Schema
         </div>
-        <form onSubmit={handleUpdate} className="p-6 space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-text-muted uppercase tracking-widest mb-1.5">Current System Password</label>
-            <input 
-              type="password" 
-              className="w-full px-4 py-2 bg-gray-50 border border-border rounded-lg outline-none focus:border-accent"
-              value={passwords.current}
-              onChange={(e) => setPasswords({...passwords, current: e.target.value})}
-              required
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="p-10 space-y-6">
+          <div className="flex items-center gap-4 p-6 bg-green-50/50 rounded-2xl border border-green-100">
+            <CheckCircle className="text-green-500" size={24} />
             <div>
-              <label className="block text-xs font-bold text-text-muted uppercase tracking-widest mb-1.5">New Password</label>
-              <input 
-                type="password" 
-                className="w-full px-4 py-2 bg-gray-50 border border-border rounded-lg outline-none focus:border-accent"
-                value={passwords.new}
-                onChange={(e) => setPasswords({...passwords, new: e.target.value})}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-text-muted uppercase tracking-widest mb-1.5">Confirm New Password</label>
-              <input 
-                type="password" 
-                className="w-full px-4 py-2 bg-gray-50 border border-border rounded-lg outline-none focus:border-accent"
-                value={passwords.confirm}
-                onChange={(e) => setPasswords({...passwords, confirm: e.target.value})}
-                required
-              />
+              <div className="text-sm font-black text-gray-900 uppercase tracking-tighter">Firebase Federated Auth Active</div>
+              <p className="text-xs text-gray-500 font-medium">관리자 인증이 Google OAuth 2.0 및 Firebase Federated Auth로 통합되었습니다.</p>
             </div>
           </div>
 
-          {message.text && (
-            <div className={`p-3 rounded-lg text-xs font-bold uppercase tracking-wider ${message.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-              {message.text}
+          <div className="space-y-4">
+            <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Authorized Administrator</div>
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 font-mono text-sm text-gray-700">
+              luganopizza@gmail.com
             </div>
-          )}
-
-          <div className="pt-2">
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="bg-primary text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-opacity-90 transition-all disabled:opacity-50"
-            >
-              {loading ? 'UPDATING...' : 'Update Password'}
-            </button>
           </div>
-        </form>
+
+          <p className="text-xs text-gray-400 leading-relaxed font-medium">
+            비밀번호 기반의 레거시 인증 방식은 보안 강화를 위해 비활성화되었습니다. 관리자 권한 변경이 필요한 경우 서버 측의 화이트리스트 설정을 수정해야 합니다.
+          </p>
+        </div>
       </div>
 
-      <div className="bg-gray-50 border border-gray-100 rounded-lg p-4 flex gap-3">
-        <AlertCircle className="text-gray-400 flex-shrink-0" size={20} />
+      <div className="bg-gray-50 border border-gray-100 rounded-[24px] p-6 flex gap-4">
+        <AlertCircle className="text-primary flex-shrink-0" size={24} />
         <div>
-          <div className="text-sm font-bold text-gray-800">Operational Notice</div>
-          <p className="text-xs text-gray-500 leading-relaxed">
-            비밀번호 변경 시 즉시 서버 DB에 반영되며, 다음 로그인부터 새로운 비밀번호가 적용됩니다. 분실 시 서버 환경변수 리셋이 필요합니다.
+          <div className="text-sm font-black text-gray-900 uppercase tracking-tighter mb-1">Operational Notice</div>
+          <p className="text-xs text-gray-500 leading-relaxed font-medium">
+            현재 인스턴스는 'luganopizza@gmail.com' 이메일 소유자에게만 모든 관리 권한을 허용하도록 설계되었습니다.
           </p>
         </div>
       </div>

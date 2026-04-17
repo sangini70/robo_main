@@ -1,26 +1,33 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../../services/adminService';
-import { Shield, Key, ArrowRight } from 'lucide-react';
+import { signInWithGoogle } from '../../firebase';
+import { Shield, ArrowRight } from 'lucide-react';
 
 export default function AdminLogin() {
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
     
-    const success = await login(password);
-    if (success) {
-      navigate('/admin/dashboard');
-    } else {
-      setError('Invalid password. Access denied.');
+    try {
+      const user = await signInWithGoogle();
+      const idToken = await user.getIdToken();
+      
+      const success = await login(idToken);
+      if (success) {
+        navigate('/admin/dashboard');
+      } else {
+        setError('Unauthorized email. Access denied.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -34,38 +41,33 @@ export default function AdminLogin() {
           <p className="text-gray-500 font-medium tracking-tight">System authentication required to proceed.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative">
-            <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={20} />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="System Password"
-              className="w-full bg-gray-900 border border-gray-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-primary transition-all font-medium"
-              required
-            />
-          </div>
+        <div className="space-y-4">
+          <button
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full bg-white text-gray-950 font-black py-4 rounded-2xl hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-3 group disabled:opacity-50"
+          >
+            {loading ? (
+              'AUTHENTICATING...'
+            ) : (
+              <>
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" referrerPolicy="no-referrer" />
+                SIGN IN WITH GOOGLE
+              </>
+            )}
+            {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
+          </button>
           
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold p-3 rounded-lg text-center uppercase tracking-widest">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold p-3 rounded-lg text-center uppercase tracking-widest leading-relaxed">
               {error}
             </div>
           )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-white text-gray-950 font-black py-4 rounded-2xl hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
-          >
-            {loading ? 'AUTHENTICATING...' : 'ACCESS DASHBOARD'} 
-            {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
-          </button>
-        </form>
+        </div>
 
         <div className="mt-12 flex flex-col items-center gap-2">
            <div className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em]">ROBO-ADVISOR CORE</div>
-           <div className="text-[9px] text-gray-700">v1.0.4 - Secure Instance</div>
+           <div className="text-[9px] text-gray-700">v1.1.0 - Firebase Federated Instance</div>
         </div>
       </div>
     </div>

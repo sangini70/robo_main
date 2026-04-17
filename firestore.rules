@@ -59,5 +59,20 @@ service cloud.firestore {
     match /indexing_status/{slug} {
       allow read, write: if isAdmin();
     }
+
+    // Posts count or metadata: Only Admin
+    match /posts/{slug} {
+      allow read, write: if isAdmin();
+    }
+
+    // Signals: Only Admin
+    match /signals/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // Tracking logs: Server-side use normally, but define matches for completeness
+    match /track_logs/{hash} {
+      allow read, write: if isAdmin();
+    }
   }
 }

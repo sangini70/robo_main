@@ -11,11 +11,11 @@ export async function checkAuth(): Promise<boolean> {
   }
 }
 
-export async function login(password: string): Promise<boolean> {
+export async function login(idToken: string): Promise<boolean> {
   const res = await fetch('/api/admin/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password })
+    body: JSON.stringify({ idToken })
   });
   return res.ok;
 }
@@ -59,11 +59,29 @@ export async function saveSignals(signals: MarketSignal[]): Promise<boolean> {
   return res.ok;
 }
 
-export async function updatePassword(currentPassword: string, newPassword: string): Promise<boolean> {
-  const res = await fetch('/api/admin/settings/password', {
+export async function fetchAdminPosts(): Promise<any[]> {
+  const res = await fetch('/api/admin/posts');
+  if (!res.ok) throw new Error('Unauthorized');
+  return res.json();
+}
+
+export async function saveAdminPost(post: any): Promise<boolean> {
+  const res = await fetch('/api/admin/posts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentPassword, newPassword })
+    body: JSON.stringify(post)
   });
   return res.ok;
+}
+
+export async function deleteAdminPost(slug: string): Promise<boolean> {
+  const res = await fetch(`/api/admin/posts/${slug}`, {
+    method: 'DELETE'
+  });
+  return res.ok;
+}
+
+export async function publishStaticContent(): Promise<{ success: boolean; message: string }> {
+  const res = await fetch('/api/admin/publish', { method: 'POST' });
+  return res.json();
 }

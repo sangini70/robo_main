@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PostSummary } from '../../types';
 import { Edit2, Trash2, ExternalLink, Plus, Search, Filter } from 'lucide-react';
-import { getDashboardStats, updateIndexingStatus } from '../../services/adminService';
+import { getDashboardStats, updateIndexingStatus, fetchAdminPosts, publishStaticContent, deleteAdminPost } from '../../services/adminService';
 
 // Add IndexData type locally if not in types.ts
 interface IndexData {
@@ -21,10 +21,11 @@ export default function AdminPosts() {
   const [flowFilter, setFlowFilter] = useState('all');
   const [indexFilter, setIndexFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [publishing, setPublishing] = useState(false);
 
   const loadData = () => {
     Promise.all([
-      fetch('/data/posts.json').then(res => res.json()),
+      fetchAdminPosts(),
       getDashboardStats()
     ]).then(([postsData, statsData]) => {
       setPosts(postsData);
@@ -49,14 +50,28 @@ export default function AdminPosts() {
     const nextStatus = nextStatusMap[currentStatus] || '미요청';
     const success = await updateIndexingStatus(slug, platform, nextStatus);
     if (success) {
-      // Optimistic or real-time update
-      setIndexing(prev => {
-        const existing = prev.find(i => i.slug === slug);
-        if (existing) {
-          return prev.map(i => i.slug === slug ? { ...i, [`${platform}_status`]: nextStatus } : i);
-        }
-        return [...prev, { slug, google_status: platform === 'google' ? nextStatus : '미요청', naver_status: platform === 'naver' ? nextStatus : '미요청' }];
-      });
+      loadData(); // Reload to get synced status
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!confirm('현재의 모든 변경사항(포스트, 시그널 등)을 공개 사이트에 반영하시겠습니까? (JSON 동기화)')) return;
+    setPublishing(true);
+    try {
+      const res = await publishStaticContent();
+      alert(res.message);
+    } catch (e) {
+      alert('출판 실패: 서버 오류');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleDelete = async (slug: string) => {
+    if (!confirm('정말 이 포스트를 삭제하시겠습니까? (Firestore에서 영구 삭제됩니다)')) return;
+    const success = await deleteAdminPost(slug);
+    if (success) {
+      loadData();
     }
   };
 
@@ -100,7 +115,16 @@ export default function AdminPosts() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-text-main">Posts</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold text-text-main">Posts</h1>
+          <button 
+            onClick={handlePublish}
+            disabled={publishing}
+            className="flex items-center gap-2 bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-green-700 disabled:opacity-50 transition-all shadow-sm"
+          >
+            {publishing ? 'Publishing...' : 'Publish to Public Site'}
+          </button>
+        </div>
         <Link to="/admin/new" className="bg-accent text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-opacity-90 transition-all shadow-md">
           <Plus size={18} /> New Post
         </Link>
@@ -240,7 +264,11 @@ export default function AdminPosts() {
                       <Link to={`/admin/edit/${post.slug}`} className="p-1.5 text-text-muted hover:text-blue-600 transition-colors" title="Edit">
                         <Edit2 size={16} />
                       </Link>
-                      <button className="p-1.5 text-text-muted hover:text-red-600 transition-colors" title="Delete">
+                      <button 
+                        onClick={() => handleDelete(post.slug)}
+                        className="p-1.5 text-text-muted hover:text-red-600 transition-colors" 
+                        title="Delete"
+                      >
                         <Trash2 size={16} />
                       </button>
                     </div>

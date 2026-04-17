@@ -1,10 +1,7 @@
 {
-  "projectId": "gen-lang-client-0776731285",
-  "appId": "1:1007293564968:web:82cdbd1ff138936e764d1d",
-  "apiKey": "AIzaSyBDsznYdMrlQ4l_ZXr-WW6oLCvBTPayRiw",
-  "authDomain": "gen-lang-client-0776731285.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-1acf3ea8-8733-4c8c-9f22-2033b16fc363",
-  "storageBucket": "gen-lang-client-0776731285.firebasestorage.app",
-  "messagingSenderId": "1007293564968",
-  "measurementId": ""
+  "projectId": "robo-advisor-prod",
+  "appId": "",
+  "apiKey": "",
+  "authDomain": "robo-advisor-prod.firebaseapp.com",
+  "firestoreDatabaseId": ""
 }
