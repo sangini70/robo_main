@@ -217,14 +217,16 @@ Sitemap: https://${host}/sitemap.xml`;
     // Admin Auth (Firebase Token Based)
     app.post("/api/admin/login", loginLimiter, async (req, res) => {
       const { idToken } = req.body;
-      const adminEmail = "luganopizza@gmail.com";
+      const adminEmails = ["luganopizza@gmail.com"];
       
       try {
         const decodedToken = await admin.auth().verifyIdToken(idToken);
-        const email = decodedToken.email;
+        const email = decodedToken.email?.trim().toLowerCase();
         const emailVerified = decodedToken.email_verified;
 
-        if (email === adminEmail && emailVerified) {
+        console.log(`[AUTH] Login attempt metadata: email=${email}, verified=${emailVerified}`);
+
+        if (email && adminEmails.includes(email) && emailVerified) {
           res.cookie("admin_session", "authenticated", { 
             httpOnly: true, 
             secure: true, // Always true for production HTTPS (Vercel)
