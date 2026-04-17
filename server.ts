@@ -219,7 +219,7 @@ Sitemap: https://${host}/sitemap.xml`;
       const { idToken } = req.body;
       
       const adminUIDs: string[] = [
-        "O8T7pyXh5Mfd5wx7fqJdkfqTzw1"
+        "3B7P7yh5Mfd5wx7fqJdkfqTzw1"
       ];
       
       const adminEmails: string[] = [
